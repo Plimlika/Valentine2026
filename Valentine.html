@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Be My Valentine?</title>
+    <style>
+        :root {
+            --primary-pink: #ff4d6d;
+            --soft-pink: #fff0f3;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: var(--soft-pink);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        #container {
+            max-width: 600px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .emoji-display {
+            font-size: 80px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        h1 {
+            color: var(--primary-pink);
+            font-size: 2.5rem;
+            margin: 10px 0;
+        }
+
+        .buttons-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            min-height: 150px; /* Space for the growing button */
+            width: 100%;
+        }
+
+        button {
+            padding: 12px 25px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        #yesBtn {
+            background-color: #4caf50;
+            color: white;
+            white-space: nowrap;
+        }
+
+        #noBtn {
+            background-color: #f44336;
+            color: white;
+        }
+
+        #noBtn:hover {
+            background-color: #d32f2f;
+        }
+
+        .success-area {
+            display: none;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .stats-text {
+            margin-top: 20px;
+            font-size: 0.85rem;
+            color: #a0a0a0;
+            line-height: 1.5;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .heart-particle {
+            position: fixed;
+            pointer-events: none;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="container">
+        <div id="quiz-view">
+            <div id="emoji-box" class="emoji-display">💌</div>
+            <h1 id="headline">Will you be my Valentine?</h1>
+            
+            <div class="buttons-wrapper">
+                <button id="yesBtn">Yes! 💖</button>
+                <button id="noBtn">No</button>
+            </div>
+        </div>
+
+        <div id="success-view" class="success-area">
+            <div class="emoji-display">🥰</div>
+            <h1>I knew you'd say Yes!</h1>
+            <p style="color: #666;">You just made my day the best one ever.</p>
+            <div id="log-info" class="stats-text"></div>
+            <button onclick="resetStorage()" style="margin-top: 40px; padding: 5px 15px; font-size: 0.7rem; background: #e0e0e0; color: #777;">Reset Data</button>
+        </div>
+    </div>
+
+    <script>
+        const yesBtn = document.getElementById('yesBtn');
+        const noBtn = document.getElementById('noBtn');
+        const emojiBox = document.getElementById('emoji-box');
+        const quizView = document.getElementById('quiz-view');
+        const successView = document.getElementById('success-view');
+        const logInfo = document.getElementById('log-info');
+
+        const emojis = ['❤️', '💖', '💓', '💗', '💘', '💝', '✨', '🌸', '🍭'];
+        const noMessages = [
+            "Are you sure?",
+            "Think again! 🥺",
+            "Please? 🌹",
+            "One last chance...",
+            "Okay, now you have no choice!"
+        ];
+
+        let noCount = 0;
+        let scaleFactor = 1;
+
+        // Load State from LocalStorage
+        window.onload = () => {
+            if (localStorage.getItem('valentine_accepted') === 'true') {
+                showSuccess();
+            }
+        };
+
+        function changeEmoji() {
+            const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+            emojiBox.innerText = randomEmoji;
+            emojiBox.style.transform = `scale(${1.2 + Math.random() * 0.5})`;
+        }
+
+        noBtn.addEventListener('click', () => {
+            noCount++;
+            changeEmoji();
+
+            if (noCount <= 5) {
+                // Increase Yes button size
+                scaleFactor += 0.6;
+                yesBtn.style.transform = `scale(${scaleFactor})`;
+                
+                // Update No button text
+                if (noCount < 5) {
+                    noBtn.innerText = noMessages[noCount - 1];
+                } else {
+                    // On the 5th click, hide the No button
+                    noBtn.style.display = 'none';
+                }
+            }
+        });
+
+        yesBtn.addEventListener('click', () => {
+            const timestamp = new Date().toLocaleString('en-US', { 
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+            });
+            
+            localStorage.setItem('valentine_accepted', 'true');
+            localStorage.setItem('accepted_at', timestamp);
+            localStorage.setItem('denial_attempts', noCount);
+
+            showSuccess();
+        });
+
+        function showSuccess() {
+            quizView.style.display = 'none';
+            successView.style.display = 'block';
+            document.body.style.backgroundColor = '#fce4ec';
+
+            const date = localStorage.getItem('accepted_at');
+            const tries = localStorage.getItem('denial_attempts');
+            
+            logInfo.innerHTML = `Saved to memory: ${date} <br> (Attempts to resist: ${tries})`;
+            
+            // Start heart rain
+            setInterval(spawnHeart, 300);
+        }
+
+        function spawnHeart() {
+            const heart = document.createElement('div');
+            heart.className = 'heart-particle';
+            heart.innerText = emojis[Math.floor(Math.random() * emojis.length)];
+            heart.style.left = Math.random() * 100 + 'vw';
+            heart.style.top = '100vh';
+            heart.style.fontSize = (Math.random() * 20 + 20) + 'px';
+            document.body.appendChild(heart);
+
+            const animation = heart.animate([
+                { transform: 'translateY(0)', opacity: 1 },
+                { transform: 'translateY(-110vh)', opacity: 0 }
+            ], {
+                duration: 3000 + Math.random() * 2000,
+                easing: 'linear'
+            });
+
+            animation.onfinish = () => heart.remove();
+        }
+
+        function resetStorage() {
+            localStorage.clear();
+            window.location.reload();
+        }
+    </script>
+</body>
+</html>
